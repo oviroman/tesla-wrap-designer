@@ -225,9 +225,9 @@
 
   /* ── EDITOR ──────────────────────────────────────────────────── */
   #screen-editor { overflow: hidden; }
-  .workspace { display: flex; flex: 1; overflow: hidden; }
+  .workspace { display: flex; flex: 1; overflow: hidden; position: relative; }
 
-  .sidebar { width: 272px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+  .sidebar { width: 272px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; position: absolute; left: 0; top: 0; bottom: 0; z-index: 10; }
   .sidebar::-webkit-scrollbar { width: 3px; }
   .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
