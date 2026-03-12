@@ -67,9 +67,9 @@
   .picker-scroll::-webkit-scrollbar { display: none; }
 
   .picker-hero {
-    min-height: 70vh; display: flex; flex-direction: column;
+    min-height: 45vh; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    text-align: center; padding: 80px 24px 64px;
+    text-align: center; padding: 56px 24px 48px;
     background: linear-gradient(180deg, rgba(232,20,42,0.09) 0%, transparent 75%);
     border-bottom: 1px solid var(--border);
   }
@@ -89,8 +89,8 @@
     50% { opacity: 0.45; transform: scale(0.7); }
   }
   .picker-hero h1 {
-    font-size: 72px; font-weight: 800; letter-spacing: -3px; line-height: 1.0;
-    color: var(--text); margin-bottom: 20px;
+    font-size: 52px; font-weight: 800; letter-spacing: -2.5px; line-height: 1.05;
+    color: var(--text); margin-bottom: 16px;
   }
   .picker-hero h1 span { color: var(--accent); }
   .picker-hero p {
@@ -109,7 +109,7 @@
   .btn-choose:active { transform: translateY(0); }
   .btn-choose-arrow { font-size: 20px; }
 
-  .picker-body { padding: 0; }
+  .picker-body { padding: 56px 48px 72px; max-width: 1360px; margin: 0 auto; width: 100%; }
 
   .model-group {
     padding: 64px 72px 72px;
@@ -125,7 +125,7 @@
   }
   .model-group-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-  .model-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; }
+  .model-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 
   .model-card {
     background: var(--surface2); border: 1px solid var(--border);
@@ -325,7 +325,7 @@
   .layer-del:hover { color: var(--accent); }
 
   /* ── CANVAS AREA ─────────────────────────────────────────────── */
-  .canvas-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); position: relative; overflow: hidden; }
+  .canvas-wrap { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg); overflow: hidden; }
   .canvas-bg {
     position: absolute; inset: 0;
     background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
@@ -407,6 +407,8 @@
           Choose Your Model <span class="btn-choose-arrow">↓</span>
         </button>
       </div>
+      <div class="picker-body" id="pickerBody"></div>
+
       <!-- WHY WRAP -->
       <section class="info-section">
         <div class="info-eyebrow">What is a Tesla Wrap?</div>
@@ -460,7 +462,6 @@
         </div>
       </section>
 
-      <div class="picker-body" id="pickerBody"></div>
     </div>
   </div>
 
@@ -856,41 +857,35 @@ let undoSnapshot = null;
 // ================================================================
 function buildPicker() {
   const body = document.getElementById('pickerBody');
-  MODEL_GROUPS.forEach(group => {
-    const gEl = document.createElement('div');
-    gEl.className = 'model-group';
-    gEl.innerHTML = `<div class="model-group-title">${group.label}</div>`;
-    const grid = document.createElement('div');
-    grid.className = 'model-grid';
-    group.models.forEach(m => {
-      const card = document.createElement('div');
-      card.className = 'model-card' + (m.id === 'cybertruck' ? ' cybertruck-card' : '');
-      card.onclick = () => selectModel(m);
-      card.innerHTML = `
-        ${m.badge ? `<div class="model-card__badge">${m.badge}</div>` : ''}
-        <div class="model-card__img-wrap">
-          <img class="model-card__img" src="${GH_BASE}${m.primaryId}/vehicle_image.png" alt="${m.name}"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-          <div class="model-card__placeholder">
-            <svg class="placeholder-svg" viewBox="0 0 120 50" fill="none">
-              <rect x="8" y="18" width="104" height="20" rx="7" fill="white" opacity="0.35"/>
-              <rect x="22" y="10" width="70" height="16" rx="5" fill="white" opacity="0.2"/>
-              <circle cx="28" cy="40" r="8" fill="white" opacity="0.3"/>
-              <circle cx="92" cy="40" r="8" fill="white" opacity="0.3"/>
-            </svg>
-          </div>
+  const grid = document.createElement('div');
+  grid.className = 'model-grid';
+  MODEL_GROUPS.flatMap(g => g.models).forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'model-card' + (m.id === 'cybertruck' ? ' cybertruck-card' : '');
+    card.onclick = () => selectModel(m);
+    card.innerHTML = `
+      ${m.badge ? `<div class="model-card__badge">${m.badge}</div>` : ''}
+      <div class="model-card__img-wrap">
+        <img class="model-card__img" src="${GH_BASE}${m.primaryId}/vehicle_image.png" alt="${m.name}"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="model-card__placeholder">
+          <svg class="placeholder-svg" viewBox="0 0 120 50" fill="none">
+            <rect x="8" y="18" width="104" height="20" rx="7" fill="white" opacity="0.35"/>
+            <rect x="22" y="10" width="70" height="16" rx="5" fill="white" opacity="0.2"/>
+            <circle cx="28" cy="40" r="8" fill="white" opacity="0.3"/>
+            <circle cx="92" cy="40" r="8" fill="white" opacity="0.3"/>
+          </svg>
         </div>
-        <div class="model-card__info">
-          <div class="model-card__name">${m.name}</div>
-          ${m.sub ? `<div class="model-card__sub">${m.sub}</div>` : ''}
-          <div class="model-card__covers">${m.covers}</div>
-        </div>
-        <div class="model-card__cta">Start Designing <span class="model-card__cta-arrow">→</span></div>`;
-      grid.appendChild(card);
-    });
-    gEl.appendChild(grid);
-    body.appendChild(gEl);
+      </div>
+      <div class="model-card__info">
+        <div class="model-card__name">${m.name}</div>
+        ${m.sub ? `<div class="model-card__sub">${m.sub}</div>` : ''}
+        <div class="model-card__covers">${m.covers}</div>
+      </div>
+      <div class="model-card__cta">Start Designing <span class="model-card__cta-arrow">→</span></div>`;
+    grid.appendChild(card);
   });
+  body.appendChild(grid);
 }
 
 function selectModel(m) {
