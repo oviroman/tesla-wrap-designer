@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tesla Wrap Designer — Mobile</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --surface2: #1c1c1c;
+    --border: rgba(255,255,255,0.07);
+    --accent: #e8142a;
+    --accent2: #ff3347;
+    --text: #f0f0f0;
+    --text2: #888888;
+    --muted: #484848;
+    --success: #00e5a0;
+    --header-h: 52px;
+    --toolbar-h: 68px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────── */
+  header {
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 16px; gap: 10px;
+    flex-shrink: 0; position: relative; z-index: 20;
+  }
+  .logo { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .logo-t {
+    width: 22px; height: 22px; background: var(--accent);
+    clip-path: polygon(20% 0%,80% 0%,100% 20%,60% 20%,60% 100%,40% 100%,40% 20%,0% 20%);
+  }
+  .logo-title {
+    font-family: 'Rajdhani', sans-serif; font-size: 15px;
+    font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .header-spacer { flex: 1; }
+  .header-model {
+    font-size: 11px; color: var(--text2); font-weight: 500;
+    max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .btn-back {
+    background: transparent; border: 1px solid var(--border); color: var(--text2);
+    padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
+    font-family: 'Inter', sans-serif; white-space: nowrap; transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-back:active { background: var(--surface2); color: var(--text); }
+  .btn-export {
+    background: var(--accent); color: white;
+    padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700;
+    border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; gap: 5px;
+    transition: background 0.15s; flex-shrink: 0;
+  }
+  .btn-export:active { background: var(--accent2); }
+
+  /* ── SCREENS ─────────────────────────────────────────────────── */
+  main { flex: 1; position: relative; overflow: hidden; }
+  .screen { position: absolute; inset: 0; display: none; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── PICKER ──────────────────────────────────────────────────── */
+  #screen-picker { overflow-y: auto; flex-direction: column; }
+  #screen-picker::-webkit-scrollbar { display: none; }
+
+  .picker-intro {
+    padding: 28px 20px 20px; text-align: center;
+    background: linear-gradient(180deg, rgba(232,20,42,0.08) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .picker-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; color: var(--accent);
+    border: 1px solid rgba(232,20,42,0.3); border-radius: 20px;
+    padding: 4px 12px; margin-bottom: 14px; background: rgba(232,20,42,0.06);
+  }
+  .picker-badge::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+  .picker-intro h1 {
+    font-size: 30px; font-weight: 800; letter-spacing: -1.2px; margin-bottom: 8px;
+  }
+  .picker-intro h1 span { color: var(--accent); }
+  .picker-intro p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  .picker-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; padding: 20px 16px 40px;
+  }
+  .model-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px 14px 14px;
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.2s; -webkit-user-select: none; user-select: none;
+  }
+  .model-card:active { border-color: rgba(232,20,42,0.4); background: rgba(232,20,42,0.04); }
+  .model-card__badge {
+    position: absolute; top: 10px; right: 10px;
+    background: var(--accent); color: white;
+    font-size: 9px; font-weight: 700; padding: 2px 7px;
+    border-radius: 20px; letter-spacing: 0.5px;
+  }
+  .model-card__img-wrap {
+    width: 100%; height: 88px;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+  }
+  .model-card__img {
+    max-width: 100%; max-height: 88px; object-fit: contain;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.8));
+  }
+  .model-card__name { font-size: 16px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; }
+  .model-card.cybertruck-card .model-card__name { color: var(--accent); }
+  .model-card__sub { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 3px; }
+  .model-card__year { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  /* ── EDITOR ──────────────────────────────────────────────────── */
+  #screen-editor { background: var(--bg); }
+
+  .canvas-area {
+    flex: 1; display: flex;
+    align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .canvas-area-bg {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  #mainCanvas {
+    position: relative; z-index: 1;
+    border-radius: 4px; touch-action: none;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.07), 0 16px 48px rgba(0,0,0,0.6);
+  }
+  .fill-spinner {
+    position: absolute; inset: 0; z-index: 20;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+  }
+  .fill-spinner.show { display: flex; }
+  .fill-spinner span { font-size: 13px; color: var(--success); font-weight: 600; letter-spacing: 1px; }
+  .canvas-hint {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: var(--muted); z-index: 2; white-space: nowrap;
+    background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 20px;
+  }
+
+  /* ── BOTTOM TOOLBAR ──────────────────────────────────────────── */
+  .bottom-bar {
+    height: var(--toolbar-h);
+    background: var(--surface); border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 12px; gap: 8px;
+    flex-shrink: 0; position: relative; z-index: 10;
+  }
+  .tool-btn {
+    width: 48px; height: 48px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text2);
+    cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
+    font-family: 'Inter', sans-serif; flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .tool-btn svg { flex-shrink: 0; }
+  .tool-btn.active {
+    background: rgba(232,20,42,0.1);
+    border-color: rgba(232,20,42,0.4); color: var(--accent);
+  }
+  .tool-btn:active { transform: scale(0.9); }
+
+  .bar-spacer { flex: 1; }
+  .tool-divider { width: 1px; height: 32px; background: var(--border); flex-shrink: 0; }
+
+  .color-btn {
+    width: 48px; height: 48px; border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.15); cursor: pointer;
+    flex-shrink: 0; background: #e8142a; transition: transform 0.15s;
+  }
+  .color-btn:active { transform: scale(0.9); }
+
+  /* ── COLOR SHEET ─────────────────────────────────────────────── */
+  .color-sheet-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.6); display: none;
+    align-items: flex-end; backdrop-filter: blur(4px);
+  }
+  .color-sheet-overlay.open { display: flex; }
+  .color-sheet {
+    width: 100%; background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0; padding: 0 20px 36px;
+  }
+  .sheet-handle {
+    width: 40px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 12px auto 20px;
+  }
+  .sheet-title {
+    font-size: 13px; font-weight: 600; color: var(--text2);
+    margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .color-presets {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;
+  }
+  .preset-swatch {
+    aspect-ratio: 1; border-radius: 12px; cursor: pointer;
+    border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s;
+  }
+  .preset-swatch:active { transform: scale(0.88); }
+  .preset-swatch.active { border-color: white; }
+
+  .custom-color-row { display: flex; align-items: center; gap: 14px; }
+  .custom-color-label { font-size: 14px; color: var(--text2); flex: 1; }
+  .custom-color-swatch {
+    width: 48px; height: 48px; border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.15); cursor: pointer;
+    position: relative; overflow: hidden; flex-shrink: 0;
+  }
+  .custom-color-swatch input {
+    position: absolute; inset: -4px; opacity: 0;
+    width: 56px; height: 56px; cursor: pointer;
+  }
+  .btn-sheet-done {
+    width: 100%; margin-top: 20px; padding: 15px; border-radius: 14px;
+    background: var(--accent); color: white; font-size: 15px; font-weight: 700;
+    border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+  }
+  .btn-sheet-done:active { background: var(--accent2); }
+
+  /* ── MODAL ───────────────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8); z-index: 200;
+    align-items: flex-end; backdrop-filter: blur(8px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0; padding: 0 20px 44px;
+    width: 100%; max-height: 88dvh; overflow-y: auto;
+  }
+  .modal::-webkit-scrollbar { display: none; }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 20px; }
+  .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+  .modal-success {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(0,229,160,0.06); border: 1px solid rgba(0,229,160,0.2);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 24px;
+  }
+  .modal-success-text { font-size: 13px; color: var(--success); font-weight: 600; }
+  .usb-step { display: flex; gap: 14px; margin-bottom: 20px; }
+  .usb-step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(232,20,42,0.1); border: 1px solid rgba(232,20,42,0.3);
+    color: var(--accent); display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+  }
+  .usb-step-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .usb-step-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .usb-code {
+    font-family: monospace; font-size: 11px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 10px; margin-top: 5px;
+    color: var(--success); display: inline-block;
+  }
+  .modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .modal-note { font-size: 12px; color: var(--muted); line-height: 1.65; margin-bottom: 16px; }
+  .btn-modal-close {
+    width: 100%; padding: 15px; border-radius: 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .btn-modal-close:active { background: rgba(255,255,255,0.05); }
+
+  /* ── NOTIFICATION ────────────────────────────────────────────── */
+  .notif {
+    position: fixed; top: 60px; left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--success); color: #000;
+    padding: 9px 18px; border-radius: 20px;
+    font-weight: 700; font-size: 13px;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 300; box-shadow: 0 8px 24px rgba(0,0,0,0.3); white-space: nowrap;
+  }
+  .notif.show { transform: translateX(-50%) translateY(0); }
+  .notif.error { background: var(--accent); color: white; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-t"></div>
+    <div class="logo-title">Wrap</div>
+  </div>
+  <div class="header-spacer"></div>
+  <span class="header-model" id="headerModel" style="display:none"></span>
+  <button class="btn-back" id="btnBack" style="display:none" onclick="goToPicker()">← Models</button>
+  <button class="btn-export" id="btnExport" style="display:none" onclick="exportPNG()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export
+  </button>
+</header>
+
+<main>
+
+  <!-- PICKER -->
+  <div id="screen-picker" class="screen active">
+    <div class="picker-intro">
+      <div class="picker-badge">Free · Mobile · All Tesla models</div>
+      <h1>Design Your <span>Wrap.</span></h1>
+      <p>Tap a model to start painting.</p>
+    </div>
+    <div class="picker-grid" id="pickerGrid"></div>
+  </div>
+
+  <!-- EDITOR -->
+  <div id="screen-editor" class="screen">
+    <div class="canvas-area" id="canvasArea">
+      <div class="canvas-area-bg"></div>
+      <div class="fill-spinner" id="fillSpinner"><span>Filling...</span></div>
+      <canvas id="mainCanvas" width="1024" height="1024"></canvas>
+      <div class="canvas-hint" id="canvasHint">Tap car body to fill color</div>
+    </div>
+    <div class="bottom-bar">
+      <button class="tool-btn active" id="tool-bucket" onclick="setTool('bucket')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-1.5 1.52-2.07 2.64 1.18 0 4.93.25 7.07-1.52 1.04-.86 1.04-2.62 0-3.48-.52-.43-1.22-.66-2-.66z"/></svg>
+        FILL
+      </button>
+      <button class="tool-btn" id="tool-brush" onclick="setTool('brush')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg>
+        BRUSH
+      </button>
+      <button class="tool-btn" id="tool-eraser" onclick="setTool('eraser')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16l12-12 5 5-5 5"/><path d="M6.5 17.5l-3-3"/></svg>
+        ERASE
+      </button>
+      <button class="tool-btn" id="tool-undo" onclick="undoLast()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13A9 9 0 1 0 6 6.7L3 13"/></svg>
+        UNDO
+      </button>
+      <div class="bar-spacer"></div>
+      <div class="tool-divider"></div>
+      <div class="color-btn" id="colorBtn" onclick="openColorSheet()" style="background:#e8142a"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- COLOR SHEET -->
+<div class="color-sheet-overlay" id="colorSheetOverlay" onclick="if(event.target===this)closeColorSheet()">
+  <div class="color-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Pick a Color</div>
+    <div class="color-presets" id="colorPresets"></div>
+    <div class="custom-color-row">
+      <span class="custom-color-label">Custom color</span>
+      <div class="custom-color-swatch" id="customSwatch" style="background:#e8142a">
+        <input type="color" id="customColorInput" value="#e8142a" oninput="applyCustomColor(this)">
+      </div>
+    </div>
+    <button class="btn-sheet-done" onclick="closeColorSheet()">Done</button>
+  </div>
+</div>
+
+<!-- MODAL: USB Instructions -->
+<div class="modal-overlay" id="modal-usb" onclick="if(event.target===this)closeModal('modal-usb')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Apply Design to Tesla</div>
+    <div class="modal-success">
+      <span style="font-size:16px">✅</span>
+      <span class="modal-success-text">Your design has been downloaded!</span>
+    </div>
+    <div class="usb-step">
+      <div class="usb-step-num">1</div>
+      <div>
+        <div class="usb-step-title">Prepare a USB drive</div>
+        <div class="usb-step-desc">Format as <strong style="color:var(--text)">FAT32</strong> or <strong style="color:var(--text)">exFAT</strong>. Any capacity works.</div>
+      </div>
+    </div>
+    <div class="usb-step">
+      <div class="usb-step-num">2</div>
+      <div>
+        <div class="usb-step-title">Create a Wraps folder</div>
+        <div class="usb-code">USB:\Wraps\</div>
+      </div>
+    </div>
+    <div class="usb-step">
+      <div class="usb-step-num">3</div>
+      <div>
+        <div class="usb-step-title">Copy the PNG to Wraps</div>
+        <div class="usb-step-desc">Max <strong style="color:var(--text)">1MB</strong> per file.</div>
+      </div>
+    </div>
+    <div class="usb-step">
+      <div class="usb-step-num">4</div>
+      <div>
+        <div class="usb-step-title">Connect to Tesla</div>
+        <div class="usb-step-desc">Front <strong style="color:var(--text)">USB-A</strong> port (not USB-C).</div>
+      </div>
+    </div>
+    <div class="usb-step">
+      <div class="usb-step-num">5</div>
+      <div>
+        <div class="usb-step-title">Apply from car screen</div>
+        <div class="usb-code">Toybox → Paint Shop → Wraps</div>
+      </div>
+    </div>
+    <hr class="modal-divider">
+    <div class="modal-note"><strong style="color:var(--text)">Dashcam USB works!</strong> TeslaCam and Wraps folders coexist safely on the same drive.</div>
+    <button class="btn-modal-close" onclick="closeModal('modal-usb')">Close</button>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ── MODEL DATA ────────────────────────────────────────────────────
+const MODEL_GROUPS = [
+  { label:'Model 3', models:[
+    { id:'model3-classic',  primaryId:'model3',           fallbackIds:[],
+      name:'Model 3', sub:'Original',         badge:null,  covers:'2017 – 2023' },
+    { id:'model3-highland', primaryId:'model3-2024-base', fallbackIds:['model3-2024-performance'],
+      name:'Model 3', sub:'Highland (2024+)', badge:'NEW', covers:'2024 – present' }
+  ]},
+  { label:'Model Y', models:[
+    { id:'modely-classic',  primaryId:'modely',           fallbackIds:['modely-l'],
+      name:'Model Y', sub:'Original',         badge:null,   covers:'2020 – 2024' },
+    { id:'modely-juniper',  primaryId:'modely-2025-base', fallbackIds:['modely-2025-performance','modely-2025-premium'],
+      name:'Model Y', sub:'Juniper (2025+)',  badge:'2025', covers:'2025 – present' }
+  ]},
+  { label:'Cybertruck', models:[
+    { id:'cybertruck', primaryId:'cybertruck', fallbackIds:[],
+      name:'Cybertruck', sub:'', badge:null, covers:'2023 – present' }
+  ]}
+];
+
+const GH_BASE          = 'https://raw.githubusercontent.com/teslamotors/custom-wraps/master/';
+const MASK_THRESHOLD   = 80;
+const BG_COLOR         = '#000000';
+const TOOL_SIZE_BUCKET = 0;
+const TOOL_SIZE_BRUSH  = 34;  // larger for finger painting
+
+const COLOR_PRESETS = [
+  { label:'Matte Black', hex:'#0a0a0a' },
+  { label:'Racing Red',  hex:'#c0392b' },
+  { label:'Deep Blue',   hex:'#1a3a6e' },
+  { label:'Army Green',  hex:'#2d5a27' },
+  { label:'Pearl White', hex:'#f5f5f5' },
+  { label:'Gold Rush',   hex:'#c8860a' },
+  { label:'Ultraviolet', hex:'#2c1654' },
+  { label:'Teal Carbon', hex:'#1a4a4a' },
+  { label:'Cyber Gray',  hex:'#5a5a6a' },
+  { label:'Sunset Org',  hex:'#cc4400' },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────
+let selectedModel = null;
+
+const canvas     = document.getElementById('mainCanvas');
+const ctx        = canvas.getContext('2d');
+const drawCanvas = document.createElement('canvas');
+drawCanvas.width = drawCanvas.height = 1024;
+const drawCtx    = drawCanvas.getContext('2d');
+let maskCanvas   = null;
+let templateImg  = null;
+
+let currentTool   = 'bucket';
+let toolColor     = '#e8142a';
+let fillTolerance = 30;
+let isDrawing     = false;
+let lastDrawX     = 0, lastDrawY = 0;
+let canvasScale   = 1;
+let undoSnapshot  = null;
+let notifTimer    = null;
+let rafPending    = false;
+
+// ── PICKER ────────────────────────────────────────────────────────
+function buildPicker() {
+  const grid = document.getElementById('pickerGrid');
+  MODEL_GROUPS.flatMap(g => g.models).forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'model-card' + (m.id === 'cybertruck' ? ' cybertruck-card' : '');
+    card.onclick = () => selectModel(m);
+    card.innerHTML = `
+      ${m.badge ? `<div class="model-card__badge">${m.badge}</div>` : ''}
+      <div class="model-card__img-wrap">
+        <img class="model-card__img"
+             src="${GH_BASE}${m.primaryId}/vehicle_image.png" alt="${m.name}"
+             onerror="this.style.display='none'">
+      </div>
+      <div class="model-card__name">${m.name}</div>
+      ${m.sub ? `<div class="model-card__sub">${m.sub}</div>` : ''}
+      <div class="model-card__year">${m.covers}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function selectModel(m) {
+  selectedModel = m;
+  showScreen('editor');
+  document.getElementById('headerModel').textContent = m.name + (m.sub ? ' · ' + m.sub : '');
+  clearCanvas(true);
+  loadTemplate();
+}
+
+function goToPicker() {
+  if (!isDrawCanvasEmpty() && !confirm('Leave the editor? Unsaved design will be lost.')) return;
+  clearCanvas(true);
+  showScreen('picker');
+}
+
+function isDrawCanvasEmpty() {
+  const d = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height).data;
+  for (let i = 3; i < d.length; i += 4) { if (d[i] > 0) return false; }
+  return true;
+}
+
+// ── SCREENS ───────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const isEd = name === 'editor';
+  document.getElementById('btnBack').style.display    = isEd ? '' : 'none';
+  document.getElementById('btnExport').style.display  = isEd ? '' : 'none';
+  document.getElementById('headerModel').style.display = isEd ? '' : 'none';
+  if (isEd) requestAnimationFrame(fitCanvas);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+function init() {
+  buildPicker();
+  buildColorPresets();
+  fitCanvas();
+  redraw();
+  window.addEventListener('resize', () => {
+    if (document.getElementById('screen-editor').classList.contains('active')) fitCanvas();
+  });
+  setTool('bucket');
+}
+
+function fitCanvas() {
+  const area = document.getElementById('canvasArea');
+  const maxW = area.clientWidth  - 20;
+  const maxH = area.clientHeight - 20;
+  if (maxW <= 0 || maxH <= 0) return;
+  canvasScale = Math.min(maxW / canvas.width, maxH / canvas.height, 1);
+  canvas.style.width  = (canvas.width  * canvasScale) + 'px';
+  canvas.style.height = (canvas.height * canvasScale) + 'px';
+}
+
+// ── REDRAW ────────────────────────────────────────────────────────
+function redraw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = BG_COLOR;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (templateImg) {
+    ctx.globalAlpha = 0.85;
+    ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
+  }
+  ctx.drawImage(drawCanvas, 0, 0);
+}
+
+function requestRedraw() {
+  if (!rafPending) { rafPending = true; requestAnimationFrame(() => { redraw(); rafPending = false; }); }
+}
+
+// ── TEMPLATE MASK ─────────────────────────────────────────────────
+function buildTemplateMask(W, H) {
+  if (!templateImg) { maskCanvas = null; return; }
+  maskCanvas = document.createElement('canvas');
+  maskCanvas.width = W; maskCanvas.height = H;
+  const mc = maskCanvas.getContext('2d');
+  const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+  try {
+    tmp.getContext('2d').drawImage(templateImg, 0, 0, W, H);
+    const idata = tmp.getContext('2d').getImageData(0, 0, W, H);
+    const d = idata.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const b = (d[i] + d[i+1] + d[i+2]) / 3;
+      const a = b < MASK_THRESHOLD ? 0 : b > MASK_THRESHOLD + 40 ? 255 : Math.round((b - MASK_THRESHOLD) / 40 * 255);
+      d[i] = d[i+1] = d[i+2] = 255; d[i+3] = a;
+    }
+    mc.putImageData(idata, 0, 0);
+  } catch(e) { maskCanvas = null; }
+}
+
+function applyMask() {
+  if (!maskCanvas) return;
+  drawCtx.save();
+  drawCtx.globalCompositeOperation = 'destination-in';
+  drawCtx.drawImage(maskCanvas, 0, 0, drawCanvas.width, drawCanvas.height);
+  drawCtx.restore();
+}
+
+// ── TEMPLATE LOADING ──────────────────────────────────────────────
+function loadTemplate() {
+  if (!selectedModel) return;
+  showNotif('Loading template...');
+  const urls = [selectedModel.primaryId, ...(selectedModel.fallbackIds || [])].map(id => `${GH_BASE}${id}/template.png`);
+  let tried = 0;
+  function tryNext() {
+    if (tried >= urls.length) { drawBuiltInTemplate(); return; }
+    const img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload  = () => { templateImg = img; buildTemplateMask(canvas.width, canvas.height); redraw(); showNotif('Ready — tap to paint!'); };
+    img.onerror = () => { tried++; tryNext(); };
+    img.src = urls[tried++];
+  }
+  tryNext();
+}
+
+function drawBuiltInTemplate() {
+  const off = document.createElement('canvas'); off.width = off.height = 1024;
+  const oc = off.getContext('2d'); const W = 1024, H = 1024;
+  oc.fillStyle = '#ffffff'; oc.strokeStyle = 'rgba(160,160,180,0.9)'; oc.lineWidth = 3;
+  oc.beginPath(); oc.roundRect(W*.10, H*.22, W*.80, H*.56, 28); oc.fill(); oc.stroke();
+  oc.fillStyle = 'rgba(255,255,255,0.85)';
+  oc.beginPath(); oc.roundRect(W*.22, H*.30, W*.56, H*.40, 18); oc.fill(); oc.stroke();
+  oc.fillStyle = '#0d0d10'; oc.strokeStyle = 'rgba(80,80,100,0.8)'; oc.lineWidth = 2;
+  [[W*.16,H*.29],[W*.71,H*.29],[W*.16,H*.66],[W*.71,H*.66]].forEach(([cx,cy]) => {
+    oc.beginPath(); oc.ellipse(cx, cy, W*.08, H*.06, 0, 0, Math.PI*2); oc.fill(); oc.stroke();
+  });
+  oc.textAlign = 'center'; oc.fillStyle = 'rgba(80,80,100,0.7)'; oc.font = 'bold 24px sans-serif';
+  const lbl = selectedModel ? (selectedModel.name + (selectedModel.sub ? ' · ' + selectedModel.sub : '')).toUpperCase() : 'TESLA';
+  oc.fillText(lbl, W/2, H*.50);
+  const img = new Image();
+  img.onload = () => { templateImg = img; buildTemplateMask(W, H); redraw(); showNotif('Guide template ready'); };
+  img.src = off.toDataURL();
+}
+
+// ── TOOLS ─────────────────────────────────────────────────────────
+function setTool(name) {
+  currentTool = name;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tool-' + name)?.classList.add('active');
+  const hints = { bucket:'Tap car body to fill color', brush:'Draw with your finger', eraser:'Erase painted areas' };
+  const el = document.getElementById('canvasHint');
+  if (el && hints[name]) el.textContent = hints[name];
+}
+
+function applyColor(hex) {
+  toolColor = hex;
+  document.getElementById('colorBtn').style.background = hex;
+  document.getElementById('customColorInput').value = hex;
+  document.getElementById('customSwatch').style.background = hex;
+  document.querySelectorAll('.preset-swatch').forEach(s => s.classList.toggle('active', s.dataset.hex === hex));
+}
+
+function applyCustomColor(el) { applyColor(el.value); }
+
+// ── COLOR SHEET ───────────────────────────────────────────────────
+function buildColorPresets() {
+  const container = document.getElementById('colorPresets');
+  COLOR_PRESETS.forEach(p => {
+    const btn = document.createElement('div');
+    btn.className = 'preset-swatch' + (p.hex === toolColor ? ' active' : '');
+    btn.style.background = p.hex; btn.dataset.hex = p.hex; btn.title = p.label;
+    btn.addEventListener('click', () => applyColor(p.hex));
+    container.appendChild(btn);
+  });
+}
+
+function openColorSheet()  { document.getElementById('colorSheetOverlay').classList.add('open'); }
+function closeColorSheet() { document.getElementById('colorSheetOverlay').classList.remove('open'); }
+
+// ── FLOOD FILL ────────────────────────────────────────────────────
+function hexToRGB(hex) {
+  const h = hex.replace('#','');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+
+function floodFill(startX, startY) {
+  startX = Math.round(startX); startY = Math.round(startY);
+  const W = canvas.width, H = canvas.height;
+  if (startX < 0 || startY < 0 || startX >= W || startY >= H) return;
+  let src;
+  if (templateImg) {
+    try {
+      const tmp = document.createElement('canvas'); tmp.width=W; tmp.height=H;
+      tmp.getContext('2d').drawImage(templateImg, 0, 0, W, H);
+      src = tmp.getContext('2d').getImageData(0, 0, W, H).data;
+    } catch(e) { src = ctx.getImageData(0, 0, W, H).data; }
+  } else { src = ctx.getImageData(0, 0, W, H).data; }
+
+  const idx = (startY * W + startX) * 4;
+  const tr = src[idx], tg = src[idx+1], tb = src[idx+2];
+  if (templateImg && (tr + tg + tb) / 3 < MASK_THRESHOLD) {
+    showNotif('Tap on the car body area', true); return;
+  }
+  const [fr, fg, fb] = hexToRGB(toolColor);
+  if (Math.abs(tr-fr)<3 && Math.abs(tg-fg)<3 && Math.abs(tb-fb)<3) return;
+
+  saveUndoState();
+  const tol = fillTolerance, filled = new Uint8Array(W * H);
+  const stack = new Int32Array(W * H * 2); let top = 0;
+  stack[top++] = startY * W + startX;
+  while (top > 0) {
+    const pos = stack[--top]; if (filled[pos]) continue;
+    const p = pos << 2;
+    if (Math.abs(src[p]-tr)>tol || Math.abs(src[p+1]-tg)>tol || Math.abs(src[p+2]-tb)>tol) continue;
+    filled[pos] = 1;
+    const x = pos % W, y = (pos / W) | 0;
+    if (x > 0)     stack[top++] = pos - 1;
+    if (x < W - 1) stack[top++] = pos + 1;
+    if (y > 0)     stack[top++] = pos - W;
+    if (y < H - 1) stack[top++] = pos + W;
+  }
+  const dd = drawCtx.getImageData(0, 0, W, H); const d = dd.data;
+  for (let i = 0; i < W * H; i++) {
+    if (!filled[i]) continue;
+    const p = i << 2; d[p]=fr; d[p+1]=fg; d[p+2]=fb; d[p+3]=255;
+  }
+  drawCtx.putImageData(dd, 0, 0);
+  applyMask(); redraw();
+}
+
+// ── BRUSH ─────────────────────────────────────────────────────────
+function brushAt(x, y, isStart) {
+  const size = TOOL_SIZE_BRUSH;
+  drawCtx.save();
+  drawCtx.globalCompositeOperation = 'source-over';
+  drawCtx.strokeStyle = drawCtx.fillStyle = toolColor;
+  drawCtx.lineWidth = size; drawCtx.lineCap = 'round'; drawCtx.lineJoin = 'round';
+  if (isStart) {
+    drawCtx.beginPath(); drawCtx.arc(x, y, size/2, 0, Math.PI*2); drawCtx.fill();
+  } else {
+    drawCtx.beginPath(); drawCtx.moveTo(lastDrawX, lastDrawY); drawCtx.lineTo(x, y); drawCtx.stroke();
+  }
+  drawCtx.restore();
+  applyMask();
+  lastDrawX = x; lastDrawY = y;
+  requestRedraw();
+}
+
+// ── ERASER ────────────────────────────────────────────────────────
+function eraserAt(x, y, isStart) {
+  const size = TOOL_SIZE_BRUSH;
+  drawCtx.save();
+  drawCtx.globalCompositeOperation = 'destination-out';
+  drawCtx.strokeStyle = drawCtx.fillStyle = 'rgba(0,0,0,1)';
+  drawCtx.lineWidth = size * 1.5; drawCtx.lineCap = 'round';
+  if (isStart) {
+    drawCtx.beginPath(); drawCtx.arc(x, y, size * 0.75, 0, Math.PI*2); drawCtx.fill();
+  } else {
+    drawCtx.beginPath(); drawCtx.moveTo(lastDrawX, lastDrawY); drawCtx.lineTo(x, y); drawCtx.stroke();
+  }
+  drawCtx.restore();
+  lastDrawX = x; lastDrawY = y;
+  requestRedraw();
+}
+
+// ── UNDO ──────────────────────────────────────────────────────────
+function saveUndoState() {
+  undoSnapshot = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+}
+function undoLast() {
+  if (!undoSnapshot) { showNotif('Nothing to undo', true); return; }
+  drawCtx.putImageData(undoSnapshot, 0, 0); undoSnapshot = null; redraw(); showNotif('Undone');
+}
+
+// ── CLEAR ─────────────────────────────────────────────────────────
+function clearCanvas(silent) {
+  templateImg = null; maskCanvas = null; undoSnapshot = null;
+  drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  redraw(); if (!silent) showNotif('Canvas cleared');
+}
+
+// ── CANVAS EVENTS ─────────────────────────────────────────────────
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0]; const pos = getCanvasPos(t.clientX, t.clientY);
+  if (currentTool === 'bucket') {
+    document.getElementById('fillSpinner').classList.add('show');
+    requestAnimationFrame(() => { redraw(); requestAnimationFrame(() => { floodFill(pos.x, pos.y); document.getElementById('fillSpinner').classList.remove('show'); }); });
+    return;
+  }
+  if (currentTool === 'brush')  { saveUndoState(); isDrawing = true; brushAt(pos.x, pos.y, true); }
+  if (currentTool === 'eraser') { saveUndoState(); isDrawing = true; eraserAt(pos.x, pos.y, true); }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!isDrawing) return;
+  const t = e.touches[0]; const pos = getCanvasPos(t.clientX, t.clientY);
+  if (currentTool === 'brush')  brushAt(pos.x, pos.y, false);
+  if (currentTool === 'eraser') eraserAt(pos.x, pos.y, false);
+}, { passive: false });
+
+canvas.addEventListener('touchend',    () => { isDrawing = false; });
+canvas.addEventListener('touchcancel', () => { isDrawing = false; });
+
+// Mouse fallback (for testing on desktop)
+canvas.addEventListener('mousedown', e => {
+  const pos = getCanvasPos(e.clientX, e.clientY);
+  if (currentTool === 'bucket') {
+    document.getElementById('fillSpinner').classList.add('show');
+    requestAnimationFrame(() => { redraw(); requestAnimationFrame(() => { floodFill(pos.x, pos.y); document.getElementById('fillSpinner').classList.remove('show'); }); });
+    return;
+  }
+  if (currentTool === 'brush')  { saveUndoState(); isDrawing = true; brushAt(pos.x, pos.y, true); }
+  if (currentTool === 'eraser') { saveUndoState(); isDrawing = true; eraserAt(pos.x, pos.y, true); }
+});
+canvas.addEventListener('mousemove', e => {
+  if (!isDrawing) return;
+  const pos = getCanvasPos(e.clientX, e.clientY);
+  if (currentTool === 'brush')  brushAt(pos.x, pos.y, false);
+  if (currentTool === 'eraser') eraserAt(pos.x, pos.y, false);
+});
+canvas.addEventListener('mouseup',    () => { isDrawing = false; });
+canvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+function getCanvasPos(cx, cy) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (cx - r.left) / canvasScale, y: (cy - r.top) / canvasScale };
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────
+function exportPNG() {
+  const W = canvas.width, H = canvas.height;
+  const exp = document.createElement('canvas'); exp.width = W; exp.height = H;
+  const ectx = exp.getContext('2d');
+  ectx.fillStyle = '#000000'; ectx.fillRect(0, 0, W, H); ectx.drawImage(canvas, 0, 0);
+  exp.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wrap-${(selectedModel?.id || 'tesla').substring(0, 12)}-${String(Date.now()).slice(-6)}.png`;
+    a.click(); URL.revokeObjectURL(url);
+    if (blob.size > 1024 * 1024) showNotif(`⚠ ${(blob.size / 1024).toFixed(0)}KB — over Tesla's 1MB limit`, true);
+    else openModal('modal-usb');
+  }, 'image/png');
+}
+
+// ── MODAL / NOTIF ─────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function showNotif(msg, isError) {
+  const n = document.getElementById('notif');
+  n.textContent = msg; n.className = 'notif' + (isError ? ' error' : '');
+  n.classList.add('show'); clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => n.classList.remove('show'), 2800);
+}
+
+// ── START ─────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
