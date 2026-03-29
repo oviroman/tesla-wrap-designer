@@ -603,6 +603,10 @@
               <input type="range" id="imgScale" min="10" max="300" value="100" oninput="updateSelectedScale(this)">
             </div>
             <div class="slider-row">
+              <div class="slider-label"><span>Rotation</span><span id="imgRotVal">0°</span></div>
+              <input type="range" id="imgRot" min="-180" max="180" value="0" oninput="updateSelectedRotation(this)">
+            </div>
+            <div class="slider-row">
               <div class="slider-label"><span>Opacity</span><span id="imgOpacityVal">100%</span></div>
               <input type="range" id="imgOpacity" min="0" max="100" value="100" oninput="updateSelectedOpacity(this)">
             </div>
@@ -987,7 +991,15 @@ function redraw() {
     ctx.save();
     ctx.globalAlpha = l.opacity ?? 1;
     if (l.type === 'image') {
-      ctx.drawImage(l.img, l.x, l.y, l.w, l.h);
+      const rad = ((l.rotation || 0) * Math.PI) / 180;
+      if (rad !== 0) {
+        const cx = l.x + l.w / 2, cy = l.y + l.h / 2;
+        ctx.translate(cx, cy);
+        ctx.rotate(rad);
+        ctx.drawImage(l.img, -l.w / 2, -l.h / 2, l.w, l.h);
+      } else {
+        ctx.drawImage(l.img, l.x, l.y, l.w, l.h);
+      }
     } else if (l.type === 'text') {
       ctx.font      = `${l.bold ? 'bold ' : ''}${l.size}px ${l.font}`;
       ctx.fillStyle = l.color;
@@ -995,11 +1007,18 @@ function redraw() {
     }
     ctx.restore();
     if (i === selectedIdx && currentTool === 'select') {
-      const b = getLayerBounds(l);
       ctx.save();
       ctx.strokeStyle = '#e8142a'; ctx.lineWidth = 2;
       ctx.setLineDash([6, 4]);
-      ctx.strokeRect(b.x-4, b.y-4, b.w+8, b.h+8);
+      if (l.type === 'image' && l.rotation) {
+        const cx = l.x + l.w / 2, cy = l.y + l.h / 2;
+        ctx.translate(cx, cy);
+        ctx.rotate((l.rotation * Math.PI) / 180);
+        ctx.strokeRect(-l.w / 2 - 4, -l.h / 2 - 4, l.w + 8, l.h + 8);
+      } else {
+        const b = getLayerBounds(l);
+        ctx.strokeRect(b.x-4, b.y-4, b.w+8, b.h+8);
+      }
       ctx.setLineDash([]);
       ctx.restore();
     }
@@ -1014,7 +1033,14 @@ function requestRedraw() {
 }
 
 function getLayerBounds(l) {
-  if (l.type === 'image') return { x:l.x, y:l.y, w:l.w, h:l.h };
+  if (l.type === 'image') {
+    if (!l.rotation) return { x:l.x, y:l.y, w:l.w, h:l.h };
+    const rad = (l.rotation * Math.PI) / 180;
+    const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+    const bw = l.w * cos + l.h * sin, bh = l.w * sin + l.h * cos;
+    const cx = l.x + l.w / 2, cy = l.y + l.h / 2;
+    return { x: cx - bw/2, y: cy - bh/2, w: bw, h: bh };
+  }
   if (l.type === 'text') {
     ctx.font = `${l.bold?'bold ':''}${l.size}px ${l.font}`;
     const m = ctx.measureText(l.text);
@@ -1366,7 +1392,7 @@ canvas.addEventListener('mousedown', e => {
       if (pos.x>=b.x-8 && pos.x<=b.x+b.w+8 && pos.y>=b.y-8 && pos.y<=b.y+b.h+8) {
         selectedIdx = i; isDragging = true;
         dragOffX = pos.x-layers[i].x; dragOffY = pos.y-layers[i].y;
-        updateLayerList(); redraw(); return;
+        syncLayerControls(); updateLayerList(); redraw(); return;
       }
     }
     selectedIdx = -1; updateLayerList(); redraw(); return;
@@ -1424,7 +1450,7 @@ canvas.addEventListener('touchstart', e => {
       if (pos.x>=b.x-8 && pos.x<=b.x+b.w+8 && pos.y>=b.y-8 && pos.y<=b.y+b.h+8) {
         selectedIdx = i; isDragging = true;
         dragOffX = pos.x-layers[i].x; dragOffY = pos.y-layers[i].y;
-        updateLayerList(); redraw(); return;
+        syncLayerControls(); updateLayerList(); redraw(); return;
       }
     }
     selectedIdx = -1; updateLayerList(); redraw(); return;
@@ -1481,9 +1507,10 @@ function addImageLayer(src, name) {
   img.onload = () => {
     const ms = Math.min(canvas.width*.5, img.width, img.height), r = img.width/img.height;
     let w = ms, h = ms/r; if (h>ms) { h=ms; w=ms*r; }
+    const initScale = Math.round((w / img.width) * 100);
     layers.push({ type:'image', img, name:name.replace(/\.[^.]+$/,'').substring(0,16)||'Image',
-      x:(canvas.width-w)/2, y:(canvas.height-h)/2, w, h, origW:img.width, origH:img.height, scale:100, opacity:1 });
-    selectedIdx = layers.length-1; setTool('select'); updateLayerList(); redraw(); showNotif('Image added!');
+      x:(canvas.width-w)/2, y:(canvas.height-h)/2, w, h, origW:img.width, origH:img.height, scale:initScale, rotation:0, opacity:1 });
+    selectedIdx = layers.length-1; setTool('select'); syncLayerControls(); updateLayerList(); redraw(); showNotif('Image added!');
   };
   img.src = src;
 }
@@ -1517,7 +1544,7 @@ function updateLayerList() {
     div.innerHTML = `<span class="layer-icon">${l.type==='image'?'🖼':'🔤'}</span>
       <span class="layer-name">${l.name}</span>
       <span class="layer-del" onclick="deleteLayer(${i},event)">✕</span>`;
-    div.onclick = () => { selectedIdx=i; updateLayerList(); redraw(); };
+    div.onclick = () => { selectedIdx=i; syncLayerControls(); updateLayerList(); redraw(); };
     list.appendChild(div);
   });
 }
@@ -1552,12 +1579,28 @@ function centerSelected() {
   redraw();
 }
 
+function syncLayerControls() {
+  if (selectedIdx < 0 || layers[selectedIdx].type !== 'image') return;
+  const l = layers[selectedIdx];
+  const scaleEl = document.getElementById('imgScale');
+  const rotEl   = document.getElementById('imgRot');
+  if (scaleEl) { scaleEl.value = l.scale || 100; document.getElementById('imgScaleVal').textContent = (l.scale||100)+'%'; }
+  if (rotEl)   { rotEl.value = l.rotation || 0;  document.getElementById('imgRotVal').textContent   = (l.rotation||0)+'°'; }
+}
+
 function updateSelectedScale(el) {
   if (selectedIdx<0||layers[selectedIdx].type!=='image') return;
   const l=layers[selectedIdx]; document.getElementById('imgScaleVal').textContent=el.value+'%';
   const cx=l.x+l.w/2, cy=l.y+l.h/2;
   l.w=l.origW*el.value/100; l.h=l.origH*el.value/100;
   l.x=cx-l.w/2; l.y=cy-l.h/2; l.scale=el.value; redraw();
+}
+
+function updateSelectedRotation(el) {
+  if (selectedIdx<0||layers[selectedIdx].type!=='image') return;
+  layers[selectedIdx].rotation = parseFloat(el.value);
+  document.getElementById('imgRotVal').textContent = el.value+'°';
+  redraw();
 }
 
 function updateSelectedOpacity(el) {
