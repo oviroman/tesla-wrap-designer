@@ -1418,6 +1418,17 @@ canvas.addEventListener('mouseleave', () => {
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   const t = e.touches[0], pos = getCanvasPosFromXY(t.clientX, t.clientY);
+  if (currentTool === 'select') {
+    for (let i = layers.length-1; i >= 0; i--) {
+      const b = getLayerBounds(layers[i]);
+      if (pos.x>=b.x-8 && pos.x<=b.x+b.w+8 && pos.y>=b.y-8 && pos.y<=b.y+b.h+8) {
+        selectedIdx = i; isDragging = true;
+        dragOffX = pos.x-layers[i].x; dragOffY = pos.y-layers[i].y;
+        updateLayerList(); redraw(); return;
+      }
+    }
+    selectedIdx = -1; updateLayerList(); redraw(); return;
+  }
   if (currentTool === 'bucket') {
     document.getElementById('fillSpinner').classList.add('show');
     requestAnimationFrame(() => { redraw(); requestAnimationFrame(() => { floodFill(pos.x, pos.y); document.getElementById('fillSpinner').classList.remove('show'); }); });
@@ -1430,8 +1441,13 @@ canvas.addEventListener('touchstart', e => {
 
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
-  if (!isDrawing) return;
   const t = e.touches[0], pos = getCanvasPosFromXY(t.clientX, t.clientY);
+  if (currentTool === 'select' && isDragging && selectedIdx >= 0) {
+    layers[selectedIdx].x = pos.x - dragOffX;
+    layers[selectedIdx].y = pos.y - dragOffY;
+    requestRedraw(); return;
+  }
+  if (!isDrawing) return;
   if (currentTool === 'brush')  brushAt(pos.x, pos.y, false);
   if (currentTool === 'eraser') eraserAt(pos.x, pos.y, false);
   if (currentTool === 'rect' || currentTool === 'circle') shapeMove(pos.x, pos.y);
@@ -1467,7 +1483,7 @@ function addImageLayer(src, name) {
     let w = ms, h = ms/r; if (h>ms) { h=ms; w=ms*r; }
     layers.push({ type:'image', img, name:name.replace(/\.[^.]+$/,'').substring(0,16)||'Image',
       x:(canvas.width-w)/2, y:(canvas.height-h)/2, w, h, origW:img.width, origH:img.height, scale:100, opacity:1 });
-    selectedIdx = layers.length-1; updateLayerList(); redraw(); showNotif('Image added!');
+    selectedIdx = layers.length-1; setTool('select'); updateLayerList(); redraw(); showNotif('Image added!');
   };
   img.src = src;
 }
