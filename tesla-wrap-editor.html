@@ -853,6 +853,9 @@ let drawSnapshot = null;
 let canvasScale = 1;
 let isDragging  = false;
 let dragOffX    = 0, dragOffY = 0;
+let resizeHandle = null; // 'tl'|'tr'|'bl'|'br' when resizing
+let resizeAnchorX = 0, resizeAnchorY = 0;
+let resizeOrigAspect = 1;
 let notifTimer  = null;
 let rafPending  = false;
 let undoSnapshot = null;
@@ -1020,6 +1023,16 @@ function redraw() {
         ctx.strokeRect(b.x-4, b.y-4, b.w+8, b.h+8);
       }
       ctx.setLineDash([]);
+      // Draw resize corner handles for non-rotated images
+      if (l.type === 'image' && !l.rotation) {
+        const HS = 7;
+        getHandleRects(l).forEach(h => {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(h.cx - HS, h.cy - HS, HS*2, HS*2);
+          ctx.strokeStyle = '#e8142a'; ctx.lineWidth = 2;
+          ctx.strokeRect(h.cx - HS, h.cy - HS, HS*2, HS*2);
+        });
+      }
       ctx.restore();
     }
   });
@@ -1047,6 +1060,23 @@ function getLayerBounds(l) {
     return { x:l.x, y:l.y-l.size, w:m.width, h:l.size };
   }
   return { x:0, y:0, w:0, h:0 };
+}
+
+function getHandleRects(l) {
+  return [
+    { id:'tl', cx: l.x,      cy: l.y },
+    { id:'tr', cx: l.x+l.w,  cy: l.y },
+    { id:'bl', cx: l.x,      cy: l.y+l.h },
+    { id:'br', cx: l.x+l.w,  cy: l.y+l.h },
+  ];
+}
+
+function hitTestHandle(pos, l) {
+  const HIT = 14; // canvas-px radius
+  for (const h of getHandleRects(l)) {
+    if (Math.abs(pos.x - h.cx) <= HIT && Math.abs(pos.y - h.cy) <= HIT) return h.id;
+  }
+  return null;
 }
 
 // ================================================================
@@ -1387,6 +1417,18 @@ canvas.addEventListener('mousedown', e => {
   const pos = getCanvasPos(e);
 
   if (currentTool === 'select') {
+    // Check resize handles first (only for non-rotated image layers)
+    if (selectedIdx >= 0 && layers[selectedIdx].type === 'image' && !layers[selectedIdx].rotation) {
+      const l = layers[selectedIdx];
+      const hit = hitTestHandle(pos, l);
+      if (hit) {
+        resizeHandle = hit;
+        resizeAnchorX = hit.includes('l') ? l.x + l.w : l.x;
+        resizeAnchorY = hit.includes('t') ? l.y + l.h : l.y;
+        resizeOrigAspect = l.w / l.h;
+        return;
+      }
+    }
     for (let i = layers.length-1; i >= 0; i--) {
       const b = getLayerBounds(layers[i]);
       if (pos.x>=b.x-8 && pos.x<=b.x+b.w+8 && pos.y>=b.y-8 && pos.y<=b.y+b.h+8) {
@@ -1418,6 +1460,29 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mousemove', e => {
   const pos = getCanvasPos(e);
   document.getElementById('statusPos').textContent = `POS: ${Math.round(pos.x)}, ${Math.round(pos.y)}`;
+  // Cursor feedback on handles
+  if (currentTool === 'select' && !isDragging && !resizeHandle && selectedIdx >= 0
+      && layers[selectedIdx]?.type === 'image' && !layers[selectedIdx].rotation) {
+    const hit = hitTestHandle(pos, layers[selectedIdx]);
+    canvas.style.cursor = hit ? (hit === 'tl' || hit === 'br' ? 'nwse-resize' : 'nesw-resize') : '';
+  } else if (!resizeHandle && !isDragging) {
+    canvas.style.cursor = '';
+  }
+  if (currentTool === 'select' && resizeHandle && selectedIdx >= 0) {
+    const l = layers[selectedIdx];
+    let newW = Math.abs(pos.x - resizeAnchorX);
+    let newH = Math.abs(pos.y - resizeAnchorY);
+    // Maintain aspect ratio
+    if (newW / (newH || 1) > resizeOrigAspect) newH = newW / resizeOrigAspect;
+    else newW = newH * resizeOrigAspect;
+    newW = Math.max(20, newW); newH = Math.max(20, newH);
+    l.w = newW; l.h = newH;
+    l.x = resizeHandle.includes('l') ? resizeAnchorX - newW : resizeAnchorX;
+    l.y = resizeHandle.includes('t') ? resizeAnchorY - newH : resizeAnchorY;
+    l.scale = Math.round((l.w / l.origW) * 100);
+    syncLayerControls();
+    requestRedraw(); return;
+  }
   if (currentTool === 'select' && isDragging && selectedIdx >= 0) {
     layers[selectedIdx].x = pos.x - dragOffX;
     layers[selectedIdx].y = pos.y - dragOffY;
@@ -1433,18 +1498,30 @@ canvas.addEventListener('mouseup', e => {
   const pos = getCanvasPos(e);
   if (currentTool === 'rect' || currentTool === 'circle') shapeEnd(pos.x, pos.y);
   if ((currentTool === 'brush' || currentTool === 'eraser') && isDrawing) showUndoHint();
-  isDrawing = false; isDragging = false;
+  isDrawing = false; isDragging = false; resizeHandle = null;
 });
 
 canvas.addEventListener('mouseleave', () => {
   if (isDrawing && (currentTool === 'rect' || currentTool === 'circle')) { isDrawing = false; drawSnapshot = null; }
-  isDrawing = false; isDragging = false;
+  isDrawing = false; isDragging = false; resizeHandle = null;
 });
 
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   const t = e.touches[0], pos = getCanvasPosFromXY(t.clientX, t.clientY);
   if (currentTool === 'select') {
+    // Check resize handles first
+    if (selectedIdx >= 0 && layers[selectedIdx].type === 'image' && !layers[selectedIdx].rotation) {
+      const l = layers[selectedIdx];
+      const hit = hitTestHandle(pos, l);
+      if (hit) {
+        resizeHandle = hit;
+        resizeAnchorX = hit.includes('l') ? l.x + l.w : l.x;
+        resizeAnchorY = hit.includes('t') ? l.y + l.h : l.y;
+        resizeOrigAspect = l.w / l.h;
+        return;
+      }
+    }
     for (let i = layers.length-1; i >= 0; i--) {
       const b = getLayerBounds(layers[i]);
       if (pos.x>=b.x-8 && pos.x<=b.x+b.w+8 && pos.y>=b.y-8 && pos.y<=b.y+b.h+8) {
@@ -1468,6 +1545,20 @@ canvas.addEventListener('touchstart', e => {
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   const t = e.touches[0], pos = getCanvasPosFromXY(t.clientX, t.clientY);
+  if (currentTool === 'select' && resizeHandle && selectedIdx >= 0) {
+    const l = layers[selectedIdx];
+    let newW = Math.abs(pos.x - resizeAnchorX);
+    let newH = Math.abs(pos.y - resizeAnchorY);
+    if (newW / (newH || 1) > resizeOrigAspect) newH = newW / resizeOrigAspect;
+    else newW = newH * resizeOrigAspect;
+    newW = Math.max(20, newW); newH = Math.max(20, newH);
+    l.w = newW; l.h = newH;
+    l.x = resizeHandle.includes('l') ? resizeAnchorX - newW : resizeAnchorX;
+    l.y = resizeHandle.includes('t') ? resizeAnchorY - newH : resizeAnchorY;
+    l.scale = Math.round((l.w / l.origW) * 100);
+    syncLayerControls();
+    requestRedraw(); return;
+  }
   if (currentTool === 'select' && isDragging && selectedIdx >= 0) {
     layers[selectedIdx].x = pos.x - dragOffX;
     layers[selectedIdx].y = pos.y - dragOffY;
@@ -1482,7 +1573,7 @@ canvas.addEventListener('touchmove', e => {
 canvas.addEventListener('touchend', e => {
   const t = e.changedTouches[0], pos = getCanvasPosFromXY(t.clientX, t.clientY);
   if (currentTool === 'rect' || currentTool === 'circle') shapeEnd(pos.x, pos.y);
-  isDrawing = false;
+  isDrawing = false; isDragging = false; resizeHandle = null;
 });
 
 function getCanvasPos(e)            { return getCanvasPosFromXY(e.clientX, e.clientY); }
