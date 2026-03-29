@@ -374,6 +374,75 @@
   .notif { position: fixed; top: 72px; right: 20px; background: var(--success); color: #000; padding: 10px 20px; border-radius: 20px; font-weight: 700; font-size: 13px; transform: translateX(220px); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 300; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
   .notif.show { transform: translateX(0); }
   .notif.error { background: var(--accent); color: white; }
+
+  /* ── CANVAS AREA: offset right of sidebar on desktop ───────── */
+  @media (min-width: 701px) {
+    .canvas-wrap { left: 272px; }
+  }
+
+  /* ── SIDEBAR TOGGLE (mobile FAB) ────────────────────────────── */
+  .sidebar-toggle {
+    position: absolute; top: 14px; left: 14px; z-index: 15;
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(14,14,18,0.92); border: 1px solid var(--border);
+    color: var(--text2); cursor: pointer; backdrop-filter: blur(10px);
+    display: none; align-items: center; justify-content: center;
+    transition: all 0.15s; font-size: 18px; flex-shrink: 0;
+  }
+  .sidebar-toggle:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  /* ── SIDEBAR OVERLAY (mobile backdrop) ──────────────────────── */
+  .sidebar-overlay {
+    display: none; position: absolute; inset: 0; z-index: 9;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(2px);
+  }
+
+  /* ── MOBILE BOTTOM TOOLBAR ───────────────────────────────────── */
+  .mobile-toolbar {
+    display: none; position: absolute; bottom: 40px; left: 50%;
+    transform: translateX(-50%); z-index: 8;
+    background: rgba(16,16,20,0.94); border: 1px solid var(--border);
+    border-radius: 32px; padding: 5px; gap: 2px;
+    backdrop-filter: blur(14px); box-shadow: 0 4px 28px rgba(0,0,0,0.55);
+    align-items: center; white-space: nowrap;
+  }
+  .mb-btn {
+    width: 48px; height: 48px; border-radius: 50%; border: none;
+    background: transparent; color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; position: relative; flex-shrink: 0;
+  }
+  .mb-btn.active { background: rgba(232,20,42,0.18); color: var(--accent); }
+  .mb-btn:active { background: rgba(255,255,255,0.08); }
+  .mb-btn svg { width: 20px; height: 20px; pointer-events: none; }
+  .mb-color-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,0.25); pointer-events: none;
+  }
+  .mb-btn input[type="color"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; border-radius: 50%;
+  }
+  .mb-divider { width: 1px; height: 28px; background: var(--border); flex-shrink: 0; margin: 0 2px; }
+
+  /* ── MOBILE BREAKPOINT ───────────────────────────────────────── */
+  @media (max-width: 700px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 88%; max-width: 300px; z-index: 12;
+    }
+    .sidebar.mobile-open { transform: translateX(0); }
+    .sidebar-overlay.mobile-open { display: block; }
+    .sidebar-toggle { display: flex; }
+    .mobile-toolbar { display: flex; }
+    .canvas-wrap { left: 0 !important; }
+    .statusbar { overflow-x: auto; gap: 12px; padding: 0 10px; flex-wrap: nowrap; }
+    .statusbar::-webkit-scrollbar { display: none; }
+    /* Larger touch targets for sliders */
+    input[type="range"] { height: 6px; }
+    input[type="range"]::-webkit-slider-thumb { width: 22px; height: 22px; }
+    .tool-btn { padding: 12px 10px; }
+  }
 </style>
 </head>
 <body>
@@ -672,6 +741,39 @@
 
       <!-- CANVAS -->
       <div class="canvas-wrap">
+        <!-- Mobile sidebar toggle -->
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleMobileSidebar()" title="Tools">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <!-- Mobile sidebar backdrop -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+        <!-- Mobile bottom toolbar -->
+        <div class="mobile-toolbar" id="mobileToolbar">
+          <button class="mb-btn" id="mb-bucket" onclick="setTool('bucket')" title="Fill Zone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-1.5 1.52-2.07 2.64 1.18 0 4.93.25 7.07-1.52 1.04-.86 1.04-2.62 0-3.48-.52-.43-1.22-.66-2-.66z"/></svg>
+          </button>
+          <button class="mb-btn" id="mb-brush" onclick="setTool('brush')" title="Brush">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg>
+          </button>
+          <button class="mb-btn" id="mb-eraser" onclick="setTool('eraser')" title="Eraser">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16l12-12 5 5-5 5"/><path d="M6.5 17.5l-3-3"/></svg>
+          </button>
+          <button class="mb-btn" id="mb-select" onclick="setTool('select')" title="Select / Move">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-7 1-4 7z"/></svg>
+          </button>
+          <div class="mb-divider"></div>
+          <button class="mb-btn" title="Color" style="overflow:hidden">
+            <div class="mb-color-dot" id="mbColorDot" style="background:#e8142a"></div>
+            <input type="color" id="mbColorInput" value="#e8142a" oninput="updateToolColor(this);document.getElementById('mbColorDot').style.background=this.value">
+          </button>
+          <div class="mb-divider"></div>
+          <button class="mb-btn" onclick="undoLast()" title="Undo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          </button>
+          <button class="mb-btn" onclick="exportPNG()" title="Export PNG" style="color:var(--success)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+        </div>
         <div class="canvas-bg"></div>
         <div class="tool-indicator" id="toolIndicator">
           <div class="tool-indicator-dot"></div>
@@ -857,6 +959,95 @@ let resizeHandle = null; // 'tl'|'tr'|'bl'|'br' when resizing
 let resizeAnchorX = 0, resizeAnchorY = 0;
 let resizeOrigAspect = 1;
 let notifTimer  = null;
+
+// ================================================================
+// PERSISTENCE — localStorage auto-save / restore
+// ================================================================
+const SAVE_KEY = 'tesla-wrap-v2';
+
+function saveState() {
+  if (!selectedModel) return;
+  try {
+    const layerData = layers.map(l => {
+      if (l.type === 'image') {
+        const { img, ...rest } = l; // exclude un-serialisable Image object
+        return rest;                // 'src' field already stored
+      }
+      return { ...l };
+    });
+    const data = {
+      modelId: selectedModel.id,
+      canvasW: canvas.width,
+      canvasH: canvas.height,
+      draw:    drawCanvas.toDataURL('image/png'),
+      layers:  layerData,
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  } catch(e) { /* quota exceeded — silently skip */ }
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 800);
+}
+
+function restoreState() {
+  let raw;
+  try { raw = localStorage.getItem(SAVE_KEY); } catch(e) { return false; }
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    const model = MODEL_GROUPS.flatMap(g => g.models).find(m => m.id === data.modelId);
+    if (!model) return false;
+
+    selectedModel = model;
+    showScreen('editor');
+    updateEditorHeader();
+
+    // Resize canvas if saved at a different size
+    if (data.canvasW && (canvas.width !== data.canvasW || canvas.height !== data.canvasH)) {
+      canvas.width = data.canvasW; canvas.height = data.canvasH;
+      drawCanvas.width = data.canvasW; drawCanvas.height = data.canvasH;
+      document.querySelectorAll('.size-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.trim().startsWith(data.canvasW));
+      });
+      document.getElementById('statusSize').textContent = `${data.canvasW}×${data.canvasH}`;
+    }
+
+    // Restore draw layer
+    if (data.draw) {
+      const drawImg = new Image();
+      drawImg.onload = () => {
+        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        drawCtx.drawImage(drawImg, 0, 0);
+        redraw();
+      };
+      drawImg.src = data.draw;
+    }
+
+    // Restore layers (images load async; fill slots by index to preserve order)
+    const restored = Array(data.layers.length).fill(null);
+    let pending = 0;
+    data.layers.forEach((l, idx) => {
+      if (l.type === 'image' && l.src) {
+        pending++;
+        const img = new Image();
+        img.onload  = () => { restored[idx] = { ...l, img }; pending--; if (!pending) { layers = restored.filter(Boolean); updateLayerList(); redraw(); } };
+        img.onerror = () => { pending--;                     if (!pending) { layers = restored.filter(Boolean); updateLayerList(); redraw(); } };
+        img.src = l.src;
+      } else {
+        restored[idx] = { ...l };
+      }
+    });
+    if (pending === 0) { layers = restored.filter(Boolean); updateLayerList(); }
+
+    loadTemplate();
+    updateCanvasInfo();
+    showNotif('Design restored ✓');
+    return true;
+  } catch(e) { return false; }
+}
 let rafPending  = false;
 let undoSnapshot = null;
 
@@ -952,7 +1143,23 @@ function init() {
     if (document.getElementById('screen-editor').classList.contains('active')) fitCanvas();
   });
   document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoLast(); }
+    const tag = document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoLast(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); duplicateLayer(); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIdx >= 0) {
+      e.preventDefault(); deleteSelected(); return;
+    }
+    if (selectedIdx >= 0 && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
+      e.preventDefault();
+      const step = e.shiftKey ? 10 : 1;
+      const l = layers[selectedIdx];
+      if (e.key === 'ArrowLeft')  l.x -= step;
+      if (e.key === 'ArrowRight') l.x += step;
+      if (e.key === 'ArrowUp')    l.y -= step;
+      if (e.key === 'ArrowDown')  l.y += step;
+      redraw(); scheduleSave();
+    }
   });
   setTool('bucket');
 }
@@ -1200,6 +1407,15 @@ function setTool(name) {
   document.getElementById('toolHint').textContent = TOOL_HINTS[name] || '';
   canvas.style.cursor = TOOL_CURSORS[name] || 'crosshair';
   document.getElementById('toleranceRow').style.display = name === 'bucket' ? '' : 'none';
+  // Sync mobile toolbar
+  ['bucket','brush','eraser','select'].forEach(t => {
+    document.getElementById('mb-'+t)?.classList.toggle('active', t === name);
+  });
+}
+
+function toggleMobileSidebar() {
+  document.querySelector('.sidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebarOverlay').classList.toggle('mobile-open');
 }
 
 function updateToolColor(el) {
@@ -1498,7 +1714,10 @@ canvas.addEventListener('mouseup', e => {
   const pos = getCanvasPos(e);
   if (currentTool === 'rect' || currentTool === 'circle') shapeEnd(pos.x, pos.y);
   if ((currentTool === 'brush' || currentTool === 'eraser') && isDrawing) showUndoHint();
+  const wasDragging = isDragging, wasResizing = !!resizeHandle;
   isDrawing = false; isDragging = false; resizeHandle = null;
+  if (wasDragging || wasResizing) scheduleSave();
+  else scheduleSave(); // also save after brush/fill strokes
 });
 
 canvas.addEventListener('mouseleave', () => {
@@ -1574,6 +1793,7 @@ canvas.addEventListener('touchend', e => {
   const t = e.changedTouches[0], pos = getCanvasPosFromXY(t.clientX, t.clientY);
   if (currentTool === 'rect' || currentTool === 'circle') shapeEnd(pos.x, pos.y);
   isDrawing = false; isDragging = false; resizeHandle = null;
+  scheduleSave();
 });
 
 function getCanvasPos(e)            { return getCanvasPosFromXY(e.clientX, e.clientY); }
@@ -1599,9 +1819,9 @@ function addImageLayer(src, name) {
     const ms = Math.min(canvas.width*.5, img.width, img.height), r = img.width/img.height;
     let w = ms, h = ms/r; if (h>ms) { h=ms; w=ms*r; }
     const initScale = Math.round((w / img.width) * 100);
-    layers.push({ type:'image', img, name:name.replace(/\.[^.]+$/,'').substring(0,16)||'Image',
+    layers.push({ type:'image', img, src, name:name.replace(/\.[^.]+$/,'').substring(0,16)||'Image',
       x:(canvas.width-w)/2, y:(canvas.height-h)/2, w, h, origW:img.width, origH:img.height, scale:initScale, rotation:0, opacity:1 });
-    selectedIdx = layers.length-1; setTool('select'); syncLayerControls(); updateLayerList(); redraw(); showNotif('Image added!');
+    selectedIdx = layers.length-1; setTool('select'); syncLayerControls(); updateLayerList(); redraw(); showNotif('Image added!'); scheduleSave();
   };
   img.src = src;
 }
@@ -1617,7 +1837,7 @@ function addText() {
   ctx.font = `bold ${size}px ${font}`;
   layers.push({ type:'text', text, size, font, color,
     x:(canvas.width-ctx.measureText(text).width)/2, y:canvas.height/2, bold:true, opacity:1, name:text.substring(0,14) });
-  selectedIdx = layers.length-1; updateLayerList(); redraw();
+  selectedIdx = layers.length-1; updateLayerList(); redraw(); scheduleSave();
 }
 
 // ================================================================
@@ -1643,7 +1863,7 @@ function updateLayerList() {
 function deleteLayer(i, e) {
   if (e) e.stopPropagation();
   layers.splice(i,1); if (selectedIdx>=layers.length) selectedIdx=layers.length-1;
-  updateLayerList(); redraw();
+  updateLayerList(); redraw(); scheduleSave();
 }
 
 function deleteSelected() { if (selectedIdx>=0) deleteLayer(selectedIdx); }
@@ -1675,8 +1895,10 @@ function syncLayerControls() {
   const l = layers[selectedIdx];
   const scaleEl = document.getElementById('imgScale');
   const rotEl   = document.getElementById('imgRot');
+  const opEl    = document.getElementById('imgOpacity');
   if (scaleEl) { scaleEl.value = l.scale || 100; document.getElementById('imgScaleVal').textContent = (l.scale||100)+'%'; }
   if (rotEl)   { rotEl.value = l.rotation || 0;  document.getElementById('imgRotVal').textContent   = (l.rotation||0)+'°'; }
+  if (opEl)    { const pct = Math.round((l.opacity??1)*100); opEl.value = pct; document.getElementById('imgOpacityVal').textContent = pct+'%'; }
 }
 
 function updateSelectedScale(el) {
@@ -1691,7 +1913,7 @@ function updateSelectedRotation(el) {
   if (selectedIdx<0||layers[selectedIdx].type!=='image') return;
   layers[selectedIdx].rotation = parseFloat(el.value);
   document.getElementById('imgRotVal').textContent = el.value+'°';
-  redraw();
+  redraw(); scheduleSave();
 }
 
 function updateSelectedOpacity(el) {
@@ -1722,7 +1944,7 @@ function clearCanvas(silent) {
   layers=[]; selectedIdx=-1; templateImg=null; maskCanvas=null; undoSnapshot=null;
   drawCtx.clearRect(0,0,drawCanvas.width,drawCanvas.height);
   updateLayerList(); redraw();
-  if (!silent) showNotif('Canvas reset');
+  if (!silent) { showNotif('Canvas reset'); try { localStorage.removeItem(SAVE_KEY); } catch(e){} }
 }
 
 // ================================================================
@@ -1784,6 +2006,9 @@ function scrollToModels() {
 
 buildPicker();
 init();
+if (!restoreState()) {
+  // No saved state — stay on picker (default)
+}
 </script>
 </body>
 </html>
